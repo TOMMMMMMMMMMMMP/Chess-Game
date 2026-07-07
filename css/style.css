@@ -1,93 +1,92 @@
-/* ── Reset & base ──────────────────────────────────────────── */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* ── Reset & base ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
+  font-family: 'Segoe UI', sans-serif;
   background: #1a1a2e;
   color: #eee;
-  font-family: 'Segoe UI', sans-serif;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px;
 }
 
-/* ── Layout ────────────────────────────────────────────────── */
-#app {
+/* ── Layout ───────────────────────────────────────────────────── */
+.app {
   display: flex;
-  gap: 32px;
-  align-items: flex-start;
-  padding: 32px;
-}
-
-/* ── Board container ───────────────────────────────────────── */
-#board-container {
-  display: flex;
-  flex-direction: column;
+  gap: 28px;
   align-items: flex-start;
 }
 
-#board-wrapper {
-  display: flex;
-}
-
-/* ── Column labels (a-h) ───────────────────────────────────── */
-#col-labels {
-  display: flex;
-  margin-left: 24px;
-  margin-bottom: 4px;
-}
-
-#col-labels span {
-  width: 72px;
-  text-align: center;
-  font-size: 13px;
-  color: #aaa;
-}
-
-/* ── Row labels (1-8) ──────────────────────────────────────── */
-#row-labels {
+/* ── Board wrapper ────────────────────────────────────────────── */
+.board-wrapper {
   display: flex;
   flex-direction: column;
-  margin-right: 4px;
 }
 
-#row-labels span {
-  height: 72px;
+.board-container {
+  display: flex;
+  align-items: stretch;
+}
+
+/* ── Coordinate labels ────────────────────────────────────────── */
+.board-labels-top {
+  display: grid;
+  grid-template-columns: 24px repeat(8, 72px);
+  margin-bottom: 2px;
+}
+
+.board-labels-left {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 24px;
+  padding: 4px 0;
+}
+
+.coord-label {
   display: flex;
   align-items: center;
-  font-size: 13px;
+  justify-content: center;
+  font-size: 12px;
   color: #aaa;
-  width: 20px;
+  width: 24px;
+  height: 72px;
+}
+
+.coord-label-top {
+  height: 24px;
+  font-size: 12px;
+  color: #aaa;
+  display: flex;
+  align-items: center;
   justify-content: center;
 }
 
-/* ── Board grid ────────────────────────────────────────────── */
-#board {
+/* ── Board grid ───────────────────────────────────────────────── */
+.board {
   display: grid;
   grid-template-columns: repeat(8, 72px);
   grid-template-rows: repeat(8, 72px);
-  border: 3px solid #444;
+  border: 3px solid #555;
   border-radius: 4px;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
 }
 
-/* ── Squares ───────────────────────────────────────────────── */
+/* ── Squares ──────────────────────────────────────────────────── */
 .square {
   width: 72px;
   height: 72px;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 44px;
   cursor: pointer;
-  font-size: 42px;
   transition: background 0.15s;
-  position: relative;
   user-select: none;
+  position: relative;
 }
 
 .square.light { background: #f0d9b5; }
@@ -97,105 +96,92 @@ body {
 
 .square.selected {
   background: #7fc97f !important;
+  box-shadow: inset 0 0 0 3px #2a7a2a;
 }
 
 .square.legal-move::after {
   content: '';
   position: absolute;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   background: rgba(0, 0, 0, 0.25);
   border-radius: 50%;
+  pointer-events: none;
 }
 
-.square.legal-capture::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 5px solid rgba(0,0,0,0.25);
-  border-radius: 0;
+.square.legal-capture {
+  box-shadow: inset 0 0 0 4px rgba(0,0,0,0.3);
 }
 
-/* ── Side panel ────────────────────────────────────────────── */
-#side-panel {
+/* ── Side panel ───────────────────────────────────────────────── */
+.side-panel {
+  width: 220px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: 220px;
 }
 
-#turn-display {
+.turn-indicator {
   background: #16213e;
-  border-radius: 10px;
-  padding: 14px 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 16px;
+  border: 2px solid #444;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 15px;
   font-weight: 600;
-  border: 1px solid #333;
-}
-
-#turn-icon { font-size: 24px; }
-
-.panel-section {
-  background: #16213e;
-  border-radius: 10px;
-  padding: 12px 14px;
-  border: 1px solid #333;
+  text-align: center;
 }
 
 .panel-section h3 {
   font-size: 12px;
-  color: #aaa;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 8px;
+  color: #aaa;
+  margin-bottom: 6px;
 }
 
-#captured-white,
-#captured-black {
+.captured {
+  background: #16213e;
+  border-radius: 6px;
+  padding: 6px 8px;
+  min-height: 36px;
   font-size: 22px;
-  min-height: 28px;
   letter-spacing: 2px;
+  word-break: break-all;
 }
 
-#move-history {
-  max-height: 200px;
+.move-history {
+  background: #16213e;
+  border-radius: 6px;
+  padding: 8px;
+  height: 200px;
   overflow-y: auto;
   font-size: 13px;
+  font-family: monospace;
   color: #ccc;
-  line-height: 1.8;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-#move-history div {
-  padding: 2px 0;
-  border-bottom: 1px solid #1e2a45;
+.move-history .move-entry {
+  padding: 2px 4px;
+  border-radius: 3px;
 }
 
-/* ── Restart button ────────────────────────────────────────── */
-#restart-btn {
-  background: #e74c3c;
+.move-history .move-entry:nth-child(odd) {
+  background: rgba(255,255,255,0.04);
+}
+
+.restart-btn {
+  background: #e63946;
   color: white;
   border: none;
   border-radius: 8px;
   padding: 12px;
-  font-size: 15px;
-  cursor: pointer;
+  font-size: 14px;
   font-weight: 600;
+  cursor: pointer;
   transition: background 0.2s;
 }
 
-#restart-btn:hover { background: #c0392b; }
-
-/* ── Check / Checkmate banner ──────────────────────────────── */
-#status-banner {
-  display: none;
-  background: #e74c3c;
-  color: white;
-  text-align: center;
-  padding: 10px;
-  font-weight: bold;
-  font-size: 15px;
-  border-radius: 8px;
-}
+.restart-btn:hover { background: #c1121f; }

@@ -2,54 +2,57 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chess Game</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
-  <div id="app">
+  <div class="app">
 
-    <!-- Board section -->
-    <div id="board-section">
-      <div id="board-container">
-        <div id="col-labels"></div>
-        <div id="board-wrapper">
-          <div id="row-labels"></div>
-          <div id="board"></div>
-        </div>
+    <!-- Board -->
+    <div class="board-wrapper">
+      <div class="board-labels-top"></div>
+      <div class="board-container">
+        <div class="board-labels-left"></div>
+        <div id="board" class="board"></div>
       </div>
     </div>
 
     <!-- Side panel -->
-    <div id="side-panel">
+    <div class="side-panel">
 
-      <div id="turn-display">
-        <span id="turn-icon">♟</span>
-        <span id="turn-text">White's turn</span>
+      <div class="turn-indicator" id="turn-indicator">
+        ⬜ White's turn
       </div>
 
       <div class="panel-section">
         <h3>Captured by White</h3>
-        <div id="captured-white"></div>
+        <div id="captured-white" class="captured"></div>
       </div>
 
       <div class="panel-section">
         <h3>Captured by Black</h3>
-        <div id="captured-black"></div>
+        <div id="captured-black" class="captured"></div>
       </div>
 
       <div class="panel-section">
         <h3>Move History</h3>
-        <div id="move-history"></div>
+        <div id="move-history" class="move-history"></div>
       </div>
 
-      <button id="restart-btn">↺ Restart</button>
+      <button id="restart-btn" class="restart-btn">↺ Restart</button>
 
     </div>
-
   </div>
 
+  <script src="js/pieces/Piece.js"></script>
+  <script src="js/pieces/King.js"></script>
+  <script src="js/pieces/Queen.js"></script>
+  <script src="js/pieces/Rook.js"></script>
+  <script src="js/pieces/Bishop.js"></script>
+  <script src="js/pieces/Knight.js"></script>
+  <script src="js/pieces/Pawn.js"></script>
   <script src="js/board.js"></script>
   <script src="js/game.js"></script>
 </body>
