@@ -58,7 +58,6 @@ class Game {
   _isInCheck(color, boardState) {
     const king = this._findKing(color, boardState);
     if (!king) return false;
-
     for (let row = 0; row < 8; row++) {
       for (let col = 0; col < 8; col++) {
         const p = boardState[row][col];
@@ -73,7 +72,6 @@ class Game {
     return false;
   }
 
-  /** Simulate a move and return true if it leaves own king in check */
   _moveLeavesKingInCheck(piece, toRow, toCol) {
     const simState = this.state.map(r => [...r]);
     simState[piece.row][piece.col] = null;
@@ -84,7 +82,6 @@ class Game {
     return this._isInCheck(piece.color, simState);
   }
 
-  /** Get legal moves filtered to only those that don't leave king in check */
   _getSafeMoves(piece) {
     const raw = piece.getLegalMoves(this.state);
     return raw.filter(m => !this._moveLeavesKingInCheck(piece, m.row, m.col));
@@ -124,6 +121,47 @@ class Game {
       const row = parseInt(sq.dataset.row);
       const col = parseInt(sq.dataset.col);
       this._handleClick(row, col);
+    });
+
+    this.board.boardEl.addEventListener('dragstart', (e) => {
+      const sq = e.target.closest('.square');
+      if (!sq) return;
+      const row = parseInt(sq.dataset.row);
+      const col = parseInt(sq.dataset.col);
+      const piece = this.state[row][col];
+      if (!piece || piece.color !== this.currentTurn) {
+        e.preventDefault();
+        return;
+      }
+      this._deselect();
+      this._select(piece);
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', `${row},${col}`);
+      sq.classList.add('dragging');
+    });
+
+    this.board.boardEl.addEventListener('dragend', (e) => {
+      const sq = e.target.closest('.square');
+      if (sq) sq.classList.remove('dragging');
+    });
+
+    this.board.boardEl.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+
+    this.board.boardEl.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const sq = e.target.closest('.square');
+      if (!sq) return;
+      const toRow = parseInt(sq.dataset.row);
+      const toCol = parseInt(sq.dataset.col);
+      if (!this.selectedPiece) return;
+      const isLegal = this.legalMoves.some(m => m.row === toRow && m.col === toCol);
+      if (isLegal) {
+        this._movePiece(this.selectedPiece, toRow, toCol);
+      }
+      this._deselect();
     });
   }
 
@@ -179,7 +217,9 @@ class Game {
     return ['a','b','c','d','e','f','g','h'][col];
   }
 
-  _movePiece(piece, toRow, toCol) {
+  async _movePiece(piece, toRow, toCol) {
+    const fromRow = piece.row;
+    const fromCol = piece.col;
     const captured = this.state[toRow][toCol];
     const fromNotation = `${this._colToFile(piece.col)}${8 - piece.row}`;
     const toNotation   = `${this._colToFile(toCol)}${8 - toRow}`;
@@ -193,7 +233,35 @@ class Game {
     piece.hasMoved = true;
     this.state[toRow][toCol] = piece;
 
+    // Castling — move the rook too
+    if (piece instanceof King) {
+      const colDiff = toCol - fromCol;
+      if (colDiff === 2) {
+        const rook = this.state[toRow][7];
+        if (rook) {
+          this.state[toRow][7] = null;
+          rook.col = 5;
+          rook.hasMoved = true;
+          this.state[toRow][5] = rook;
+        }
+      } else if (colDiff === -2) {
+        const rook = this.state[toRow][0];
+        if (rook) {
+          this.state[toRow][0] = null;
+          rook.col = 3;
+          rook.hasMoved = true;
+          this.state[toRow][3] = rook;
+        }
+      }
+    }
+
+    // Pawn promotion
+    if (piece instanceof Pawn && (toRow === 0 || toRow === 7)) {
+      await this._handlePromotion(piece);
+    }
+
     this._renderPieces();
+    this._highlightLastMove(fromRow, fromCol, toRow, toCol);
     this._addMoveHistory(notation);
     this._switchTurn();
     this._checkGameState();
@@ -221,35 +289,83 @@ class Game {
     el.scrollTop = el.scrollHeight;
   }
 
+  // ── Highlights ─────────────────────────────────────────────────────────────
+
+  _highlightLastMove(fromRow, fromCol, toRow, toCol) {
+    document.querySelectorAll('.last-move').forEach(el => el.classList.remove('last-move'));
+    this.board.getSquare(fromRow, fromCol).classList.add('last-move');
+    this.board.getSquare(toRow, toCol).classList.add('last-move');
+  }
+
+  _highlightKingInCheck(color) {
+    document.querySelectorAll('.in-check').forEach(el => el.classList.remove('in-check'));
+    const king = this._findKing(color, this.state);
+    if (king) {
+      this.board.getSquare(king.row, king.col).classList.add('in-check');
+    }
+  }
+
+  // ── Promotion ──────────────────────────────────────────────────────────────
+
+  _handlePromotion(piece) {
+    return new Promise((resolve) => {
+      const choices = piece.color === 'white'
+        ? ['♕','♖','♗','♘']
+        : ['♛','♜','♝','♞'];
+      const classes = [Queen, Rook, Bishop, Knight];
+
+      const modal = document.createElement('div');
+      modal.className = 'promotion-modal';
+
+      choices.forEach((sym, i) => {
+        const span = document.createElement('span');
+        span.textContent = sym;
+        span.title = classes[i].name;
+        span.addEventListener('click', () => {
+          const newPiece = new classes[i](piece.color, piece.row, piece.col);
+          this.state[piece.row][piece.col] = newPiece;
+          this._renderPieces();
+          document.body.removeChild(modal);
+          resolve();
+        });
+        modal.appendChild(span);
+      });
+
+      document.body.appendChild(modal);
+    });
+  }
+
   // ── Turn & game state ──────────────────────────────────────────────────────
 
   _switchTurn() {
     this.currentTurn = this.currentTurn === 'white' ? 'black' : 'white';
     const icon = this.currentTurn === 'white' ? '⬜' : '⬛';
-    document.getElementById('turn-indicator').textContent = `${icon} ${this.currentTurn === 'white' ? "White's turn" : "Black's turn"}`;
+    const name = this.currentTurn === 'white' ? "White's turn" : "Black's turn";
+    document.getElementById('turn-indicator').textContent = `${icon} ${name}`;
   }
 
   _checkGameState() {
     const color = this.currentTurn;
+    const indicator = document.getElementById('turn-indicator');
+
+    document.querySelectorAll('.in-check').forEach(el => el.classList.remove('in-check'));
+    indicator.classList.remove('in-check');
 
     if (this._isCheckmate(color)) {
       const winner = color === 'white' ? 'Black' : 'White';
-      setTimeout(() => {
-        alert(`Checkmate! ${winner} wins! 🏆`);
-      }, 100);
+      setTimeout(() => alert(`Checkmate! ${winner} wins! 🏆`), 100);
       return;
     }
 
     if (this._isStalemate(color)) {
-      setTimeout(() => {
-        alert("Stalemate! It's a draw! 🤝");
-      }, 100);
+      setTimeout(() => alert("Stalemate! It's a draw! 🤝"), 100);
       return;
     }
 
     if (this._isInCheck(color, this.state)) {
-      document.getElementById('turn-indicator').textContent =
-        `${color === 'white' ? '⬜' : '⬛'} ${color === 'white' ? "White" : "Black"} is in CHECK! ⚠️`;
+      this._highlightKingInCheck(color);
+      indicator.classList.add('in-check');
+      indicator.textContent = `${color === 'white' ? '⬜' : '⬛'} ${color === 'white' ? 'White' : 'Black'} is in CHECK! ⚠️`;
     }
   }
 
@@ -264,11 +380,17 @@ class Game {
     this.board.clearHighlights();
     this._renderPieces();
     document.getElementById('turn-indicator').textContent = "⬜ White's turn";
+    document.getElementById('turn-indicator').classList.remove('in-check');
     document.getElementById('captured-white').innerHTML = '';
     document.getElementById('captured-black').innerHTML = '';
     document.getElementById('move-history').innerHTML = '';
+    document.querySelectorAll('.last-move, .in-check').forEach(el => {
+      el.classList.remove('last-move', 'in-check');
+    });
   }
 }
+
+// ── Bootstrap ──────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
   window.game = new Game();
